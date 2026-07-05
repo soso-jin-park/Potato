@@ -10,7 +10,14 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QFont, QIcon
 import pandas as pd
+from pathlib import Path
 from styles import COLOR
+
+BASE_DIR = Path(__file__).resolve().parent
+
+
+def _res(filename: str) -> str:
+    return str(BASE_DIR / filename)
 
 AC_TYPES  = ['DA-40NG', 'DA-42NG']
 LOCATIONS = ['청주', '무안']
@@ -61,7 +68,7 @@ class PartDialog(QDialog):
         title_row.addWidget(t)
         if not self._edit:
             btn_csv = QPushButton()
-            btn_csv.setIcon(QIcon('excel.png'))
+            btn_csv.setIcon(QIcon(_res('excel.png')))
             btn_csv.setIconSize(QSize(22, 22))
             btn_csv.setFixedSize(36, 36)
             btn_csv.setToolTip('CSV 양식 다운로드')

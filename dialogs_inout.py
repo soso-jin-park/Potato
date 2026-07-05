@@ -10,8 +10,15 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QDate, QSize
 from PyQt5.QtGui import QFont, QIcon
 import pandas as pd
+from pathlib import Path
 from styles import COLOR
 from api import fetch_parts
+
+BASE_DIR = Path(__file__).resolve().parent
+
+
+def _res(filename: str) -> str:
+    return str(BASE_DIR / filename)
 
 REGIONS = ['청주', '무안']
 IN_CSV  = ['부품번호', '수량', '날짜']
@@ -58,7 +65,7 @@ class InboundDialog(QDialog):
         t = QLabel('입고 등록'); t.setFont(QFont('', 18, QFont.Bold))
         t.setStyleSheet(f'color:{COLOR["primary"]};')
         tr.addWidget(t)
-        bc = QPushButton(); bc.setIcon(QIcon('excel.png'))
+        bc = QPushButton(); bc.setIcon(QIcon(_res('excel.png')))
         bc.setIconSize(QSize(22, 22)); bc.setFixedSize(36, 36)
         bc.setToolTip('CSV 양식 다운로드')
         bc.setStyleSheet('QPushButton{border:1px solid #ccc;border-radius:6px;background:white}'
@@ -175,7 +182,7 @@ class OutboundDialog(QDialog):
         t = QLabel('출고 등록'); t.setFont(QFont('', 18, QFont.Bold))
         t.setStyleSheet(f'color:{COLOR["primary"]};')
         tr.addWidget(t)
-        bc = QPushButton(); bc.setIcon(QIcon('excel.png'))
+        bc = QPushButton(); bc.setIcon(QIcon(_res('excel.png')))
         bc.setIconSize(QSize(22, 22)); bc.setFixedSize(36, 36)
         bc.setToolTip('CSV 양식 다운로드')
         bc.setStyleSheet('QPushButton{border:1px solid #ccc;border-radius:6px;background:white}'

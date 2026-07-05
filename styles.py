@@ -20,7 +20,8 @@ COLOR = {
 
 MAIN_QSS = f"""
 QWidget {{
-    font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+    font-family: 'Noto Sans KR', 'Noto Sans CJK KR', 'NanumGothic',
+                 'Malgun Gothic', 'DejaVu Sans', sans-serif;
     font-size: 22px;
     color: {COLOR['text']};
     background: {COLOR['bg']};
