@@ -9,6 +9,7 @@ from database import (
 from database_maint import (
     db_fetch_inbound, db_insert_inbound,
     db_fetch_outbound, db_insert_outbound,
+    db_delete_inout,
     db_fetch_maint_history, db_insert_maint_history,
     db_delete_maint_history,
     db_fetch_alarms, db_update_safety_stock, db_fetch_users,
@@ -37,6 +38,7 @@ def fetch_inbound() -> list: return db_fetch_inbound()
 def insert_inbound(r): return db_insert_inbound(r)
 def fetch_outbound() -> list: return db_fetch_outbound()
 def insert_outbound(r): return db_insert_outbound(r)
+def delete_inout(ids): db_delete_inout(ids)
 
 def fetch_maint_history() -> list: return db_fetch_maint_history()
 def insert_maint_history(r): return db_insert_maint_history(r)

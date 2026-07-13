@@ -58,6 +58,12 @@ class InOutPage(InOutPageIOMixin, QWidget):
             f'padding:8px 18px; border-radius:4px; font-size:18px;')
         btn_out.clicked.connect(self._on_outbound)
 
+        btn_del = QPushButton('🗑 삭제')
+        btn_del.setStyleSheet(
+            f'background:{COLOR["red"]}; color:white; border:none;'
+            f'padding:8px 18px; border-radius:4px; font-size:18px;')
+        btn_del.clicked.connect(self._on_delete)
+
         self._search = QLineEdit()
         self._search.setObjectName('searchInput')
         self._search.setPlaceholderText('부품번호 / 명칭 검색')
@@ -66,6 +72,7 @@ class InOutPage(InOutPageIOMixin, QWidget):
         th.addWidget(self._ac_combo)
         th.addWidget(btn_in)
         th.addWidget(btn_out)
+        th.addWidget(btn_del)
         th.addWidget(self._search, 1)
         v.addWidget(tb)
 

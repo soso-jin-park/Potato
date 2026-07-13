@@ -116,6 +116,8 @@ class MaintScheduleIOMixin:
 
     def _fill_table(self, tbl: QTableWidget, parts: list):
         # doubleClicked는 _build_ui에서 한 번만 연결 — 여기서 재연결 안 함
+        # 채우는 동안 정렬 끄기 (행 꼬임 방지)
+        tbl.setSortingEnabled(False)
         tbl.setRowCount(len(parts))
         for row, p in enumerate(parts):
             qty  = p.get('qty', 0)
@@ -129,14 +131,22 @@ class MaintScheduleIOMixin:
                 p.get('maintenance_type', '') or p.get('inspection_interval', ''),
             ]
             for col, text in enumerate(cells):
-                item = QTableWidgetItem(text)
+                item = QTableWidgetItem()
                 item.setTextAlignment(
                     Qt.AlignLeft | Qt.AlignVCenter if col in (0, 1, 4)
                     else Qt.AlignCenter
                 )
+                # 재고 수량(2)·안전재고(3)는 숫자로 정렬되게 EditRole에 숫자 저장
+                if col in (2, 3):
+                    num = qty if col == 2 else safe
+                    item.setData(Qt.DisplayRole, int(num))
+                else:
+                    item.setText(text)
                 if col == 2:
                     item.setBackground(bg)
                 tbl.setItem(row, col, item)
+        # 다 채운 뒤 정렬 다시 켜기
+        tbl.setSortingEnabled(True)
 
     def _on_double_click(self, tbl, index):
         item = tbl.item(index.row(), 0)

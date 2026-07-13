@@ -2,10 +2,11 @@
 page_inout_io.py
 InOutPage 로직 믹스인 — load / refresh / 입고 / 출고 / sync
 """
-from PyQt5.QtWidgets import QTableWidgetItem, QDialog
+from PyQt5.QtWidgets import QTableWidgetItem, QDialog, QMessageBox
 from PyQt5.QtCore import Qt
 
-from api import fetch_inbound, fetch_outbound, insert_inbound, insert_outbound
+from api import (fetch_inbound, fetch_outbound,
+                 insert_inbound, insert_outbound, delete_inout)
 from dialogs_inout import InboundDialog, OutboundDialog
 
 IN_KEYS  = ['', 'part_no', 'name', 'qty', '', 'date']
@@ -139,12 +140,54 @@ class InOutPageIOMixin:
             self._refresh()
             self._sync_parts()
 
+    def _on_delete(self):
+        # 입고·출고 테이블에서 체크된 항목의 id 수집
+        in_ids, out_ids = [], []
+        for row in range(self._tbl_in.rowCount()):
+            it = self._tbl_in.item(row, 0)
+            if it and it.checkState() == Qt.Checked:
+                rec = it.data(Qt.UserRole)
+                if rec and rec.get('id') is not None:
+                    in_ids.append(rec['id'])
+        for row in range(self._tbl_out.rowCount()):
+            it = self._tbl_out.item(row, 0)
+            if it and it.checkState() == Qt.Checked:
+                rec = it.data(Qt.UserRole)
+                if rec and rec.get('id') is not None:
+                    out_ids.append(rec['id'])
+
+        all_ids = in_ids + out_ids
+        if not all_ids:
+            QMessageBox.information(self, '알림', '삭제할 항목을 체크하세요.')
+            return
+
+        msg = f'입고 {len(in_ids)}건, 출고 {len(out_ids)}건을 삭제하시겠습니까?'
+        if QMessageBox.question(
+                self, '삭제 확인', msg,
+                QMessageBox.Yes | QMessageBox.No) != QMessageBox.Yes:
+            return
+
+        try:
+            delete_inout(all_ids)
+        except Exception as e:
+            print(f'❌ [InOutPage] 삭제 실패: {e}')
+
+        # 로컬 목록에서도 제거
+        self._inbound  = [r for r in self._inbound
+                          if r.get('id') not in in_ids]
+        self._outbound = [r for r in self._outbound
+                          if r.get('id') not in out_ids]
+        self._refresh()
+        self._sync_parts()
+
     def _sync_parts(self):
         try:
             from api import fetch_parts
             from inventory import inventory
             fresh = fetch_parts()
             inventory.parts = fresh
+            # 부품관리 등 다른 페이지에 실제 재고 변동 알림
+            inventory.stock_updated.emit()
             print(f"✅ [InOutPage] 부품 재고 동기화 완료: {len(fresh)}개")
         except Exception as e:
             print(f"❌ [InOutPage] 부품 재고 동기화 실패: {e}")

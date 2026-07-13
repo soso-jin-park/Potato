@@ -29,6 +29,9 @@ class PartsPage(QWidget):
         self._sort_asc = True
         self._build_ui()
         self._load()
+        # 입출고 등 실제 재고 변동 시에만 자동 재로드 (BOM 필터와 구분)
+        from inventory import inventory
+        inventory.stock_updated.connect(self._load)
 
     def _build_ui(self):
         v = QVBoxLayout(self)
@@ -149,7 +152,10 @@ class PartsPage(QWidget):
             filtered.append((p, ac_label))
 
         # 정렬
-        if 0 < self._sort_col < len(SORT_KEYS) and SORT_KEYS[self._sort_col]:
+        if self._sort_col == 6:
+            # 적용 기종은 ac_label(튜플 두 번째 값)로 정렬
+            filtered.sort(key=lambda x: x[1], reverse=not self._sort_asc)
+        elif 0 < self._sort_col < len(SORT_KEYS) and SORT_KEYS[self._sort_col]:
             key = SORT_KEYS[self._sort_col]
             filtered.sort(
                 key=lambda x: (x[0].get(key, 0) if isinstance(x[0].get(key, 0), (int, float))

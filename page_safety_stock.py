@@ -30,6 +30,9 @@ class SafetyStockPage(SafetyStockIOMixin, QWidget):
         self._status_filter = None  # None=부족+경고, '부족', '경고', '정상'
         self._build_ui()
         self._load()
+        # 입출고 등 실제 재고 변동 시 자동 재로드
+        from inventory import inventory
+        inventory.stock_updated.connect(self._load)
 
     def _build_ui(self):
         v = QVBoxLayout(self)
@@ -260,5 +263,3 @@ class SafetyStockPage(SafetyStockIOMixin, QWidget):
                 if lbl:
                     lbl.setStyleSheet(
                         f'color:{c}; border:none; font-size:28px; font-weight:bold;')
-
-

@@ -27,7 +27,19 @@ def _part_table(cols):
     t.setEditTriggers(QTableWidget.DoubleClicked)
     t.verticalHeader().setVisible(False)
     t.verticalHeader().setDefaultSectionSize(ROW_H)
-    t.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+    hdr = t.horizontalHeader()
+    # 부품명칭(1)만 남은 공간 채우고, 나머지는 개별 너비 지정
+    hdr.setSectionResizeMode(1, QHeaderView.Stretch)
+    for c in (0, 2, 3, 4):
+        hdr.setSectionResizeMode(c, QHeaderView.Interactive)
+    # 컬럼: 부품번호 / 부품명칭(stretch) / 재고 수량 / 안전재고 수량 / 정비종류
+    t.setColumnWidth(0, 200)   # 부품번호
+    t.setColumnWidth(2, 130)   # 재고 수량
+    t.setColumnWidth(3, 160)   # 안전재고 수량
+    t.setColumnWidth(4, 220)   # 정비종류
+    hdr.setMinimumSectionSize(100)
+    # 정렬 활성화 (헤더 클릭 시 오름/내림차순)
+    t.setSortingEnabled(True)
     t.setStyleSheet('font-size:20px;')
     return t
 
@@ -256,4 +268,3 @@ class MaintSchedulePage(MaintScheduleIOMixin, QWidget):
         self._ac_table.itemSelectionChanged.connect(self._on_table_select)
         v.addWidget(self._ac_table, 1)
         return panel
-

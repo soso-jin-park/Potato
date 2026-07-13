@@ -89,13 +89,9 @@ def db_insert_inbound(record: dict) -> dict:
             "location":              record.get("location", "청주"),
             "notes":                 record.get("note", ""),
         }).execute().data[0]
-        invs = supabase.table("parts_inventory").select("*")\
-            .eq("part_id", record.get("part_id"))\
-            .eq("location", record.get("location", "청주")).execute().data
-        if invs:
-            supabase.table("parts_inventory").update({
-                "quantity_on_hand": invs[0]["quantity_on_hand"] + record.get("qty", 0)
-            }).eq("id", invs[0]["id"]).execute()
+        _apply_stock_delta(record.get("part_id"),
+                           record.get("location", "청주"),
+                           +record.get("qty", 0))
         return {**record, "id": row["id"]}
     return _safe(_insert, record)
 
@@ -115,15 +111,71 @@ def db_insert_outbound(record: dict) -> dict:
             "handled_by":       record.get("technician", ""),
             "notes":            record.get("note", ""),
         }).execute().data[0]
-        invs = supabase.table("parts_inventory").select("*")\
-            .eq("part_id", record.get("part_id"))\
-            .eq("location", record.get("region", "청주")).execute().data
-        if invs:
-            supabase.table("parts_inventory").update({
-                "quantity_on_hand": max(0, invs[0]["quantity_on_hand"] - record.get("qty", 0))
-            }).eq("id", invs[0]["id"]).execute()
+        _apply_stock_delta(record.get("part_id"),
+                           record.get("region", "청주"),
+                           -record.get("qty", 0))
         return {**record, "id": row["id"]}
     return _safe(_insert, record)
+
+
+def _apply_stock_delta(part_id, location, delta):
+    """parts_inventory 재고를 delta만큼 증감.
+    location이 정확히 일치하는 행을 우선 쓰되,
+    없으면 part_id로만 찾아서(가장 가까운 행) 갱신한다."""
+    if not part_id:
+        print(f"⚠️ [재고반영] part_id 없음 → 건너뜀 (location={location}, delta={delta})")
+        return
+    # 1) location까지 일치하는 행
+    invs = supabase.table("parts_inventory").select("*")\
+        .eq("part_id", part_id).eq("location", location).execute().data
+    # 2) 없으면 part_id로만
+    if not invs:
+        invs = supabase.table("parts_inventory").select("*")\
+            .eq("part_id", part_id).execute().data
+    if not invs:
+        # 재고 행 자체가 없으면 신규 생성 (입고인 경우)
+        if delta > 0:
+            supabase.table("parts_inventory").insert({
+                "part_id": part_id,
+                "quantity_on_hand": delta,
+                "location": location,
+            }).execute()
+            print(f"✅ [재고반영] part_id={part_id} 신규 재고행 생성 (+{delta})")
+        else:
+            print(f"⚠️ [재고반영] part_id={part_id} 재고행 없음 → 출고 반영 불가")
+        return
+    cur = invs[0].get("quantity_on_hand", 0)
+    new_qty = max(0, cur + delta)
+    supabase.table("parts_inventory").update(
+        {"quantity_on_hand": new_qty}
+    ).eq("id", invs[0]["id"]).execute()
+    print(f"✅ [재고반영] part_id={part_id} 재고 {cur} → {new_qty} (delta={delta:+d})")
+
+
+def db_delete_inout(ids: list) -> None:
+    """입출고 내역 삭제 + 재고 원복.
+    입고 삭제 → 재고 차감 / 출고 삭제 → 재고 복원"""
+    if not supabase or not ids:
+        return
+
+    def _delete():
+        rows = supabase.table("parts_transactions").select("*")\
+            .in_("id", ids).execute().data
+        for r in rows:
+            pid   = r.get("part_id")
+            qty   = r.get("quantity", 0)
+            loc   = r.get("location", "청주")
+            ttype = r.get("transaction_type", "")
+            if not pid:
+                continue
+            # 입고 삭제 → 넣었던 만큼 다시 빼기(-) / 출고 삭제 → 뺐던 만큼 더하기(+)
+            if ttype == "입고":
+                _apply_stock_delta(pid, loc, -qty)
+            elif ttype == "출고":
+                _apply_stock_delta(pid, loc, +qty)
+        supabase.table("parts_transactions").delete().in_("id", ids).execute()
+
+    _safe(_delete)
 
 
 def db_fetch_maint_history() -> list:
@@ -243,4 +295,3 @@ def db_update_aircraft(aircraft_id: int, data: dict) -> dict:
         }).eq("id", aircraft_id).execute()
         return data
     return _safe(_update, data)
-

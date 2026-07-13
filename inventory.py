@@ -13,6 +13,7 @@ class InventoryState(QObject):
     alarms_changed     = pyqtSignal(list)
     selection_changed  = pyqtSignal(object)   # None or dict
     filter_changed     = pyqtSignal()          # 탭/필터/검색 변경 시 재렌더 트리거
+    stock_updated      = pyqtSignal()          # 입출고 등 실제 재고 변동 시
 
     def __init__(self):
         super().__init__()
